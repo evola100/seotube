@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { generateSeoContent, generateYouTubeThumbnail, generateAlternativeTitles } from '../services/geminiService';
 import { GeneratedContent, AlternativeTitle } from '../types';
@@ -11,21 +12,10 @@ import { CinematicIcon } from './icons/CinematicIcon';
 import { VibrantIcon } from './icons/VibrantIcon';
 import { MinimalistIcon } from './icons/MinimalistIcon';
 import { PhotorealisticIcon } from './icons/PhotorealisticIcon';
-import { HorizontalIcon } from './icons/HorizontalIcon';
-import { VerticalIcon } from './icons/VerticalIcon';
-import { ViralIcon } from './icons/ViralIcon';
-import { WatercolorIcon } from './icons/WatercolorIcon';
-import { RetroIcon } from './icons/RetroIcon';
-import { PixelArtIcon } from './icons/PixelArtIcon';
-
 
 const thumbnailStyles = [
-  { id: 'viral', name: 'Viral', description: 'Estilo de alto impacto, con colores y textos llamativos.', icon: ViralIcon },
   { id: 'cinematic', name: 'Cinemático', description: 'Look de película, con iluminación dramática.', icon: CinematicIcon },
   { id: 'vibrant', name: 'Vibrante', description: 'Colores saturados y alto contraste para llamar la atención.', icon: VibrantIcon },
-  { id: 'watercolor', name: 'Acuarela', description: 'Estilo artístico con colores suaves y texturas de papel.', icon: WatercolorIcon },
-  { id: 'retro', name: 'Retro', description: 'Estética de los 80s/90s, con neón y aspecto vintage.', icon: RetroIcon },
-  { id: 'pixel-art', name: 'Pixel Art', description: 'Look de videojuego clásico de 8-bits, nostálgico y único.', icon: PixelArtIcon },
   { id: 'minimalist', name: 'Minimalista', description: 'Limpio y simple, con un único punto focal claro.', icon: MinimalistIcon },
   { id: 'photorealistic', name: 'Fotorrealista', description: 'Imagen nítida y detallada, como una foto profesional.', icon: PhotorealisticIcon },
 ];
@@ -37,60 +27,6 @@ interface GeneratorProps {
   onContentChange: (content: GeneratedContent | null) => void;
   onNewContentGenerated: (topic: string, content: GeneratedContent) => void;
 }
-
-const ErrorDisplay: React.FC<{ error: string | null }> = ({ error }) => {
-  if (!error) return null;
-
-  if (error === 'QUOTA_EXCEEDED') {
-    return (
-      <div className="mt-4 rounded-md bg-red-900/50 p-4 ring-1 ring-red-500/50 text-sm">
-        <p className="font-bold text-red-300">Límite de Cuota Alcanzado</p>
-        <p className="mt-1 text-red-300/90">
-          Has excedido los límites de uso de la API para el plan actual (probablemente el gratuito).
-        </p>
-        <p className="mt-2 text-red-300/90">
-          Para seguir generando, por favor, <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline hover:text-red-200">habilita la facturación</a> en tu proyecto de Google Cloud y asegúrate de que tu clave de API esté asociada a él.
-        </p>
-      </div>
-    );
-  }
-
-  return <p className="mt-4 text-sm text-red-400">{error}</p>;
-};
-
-const FormattedDescription: React.FC<{ text: string }> = ({ text }) => {
-  // Regex to find and capture placeholders like [LINK]
-  const placeholderRegex = /(\[.*?\])/g;
-
-  // Split text into paragraphs based on one or more empty lines
-  const paragraphs = text.split(/\n\s*\n/);
-
-  return (
-    <div className="flex-grow text-gray-300 space-y-4 leading-relaxed">
-      {paragraphs.map((paragraph, pIndex) => {
-        // For each paragraph, split by the placeholder regex to isolate placeholders
-        const parts = paragraph.split(placeholderRegex);
-        return (
-          // The whitespace-pre-wrap class handles single newlines within a paragraph correctly
-          <p key={pIndex} className="whitespace-pre-wrap">
-            {parts.map((part, partIndex) => {
-              // The captured placeholders will be at odd indices in the `parts` array
-              if (partIndex % 2 === 1) {
-                return (
-                  <strong key={partIndex} className="font-semibold text-indigo-400 bg-indigo-900/50 px-1 py-0.5 rounded-md mx-0.5">
-                    {part}
-                  </strong>
-                );
-              }
-              return part; // Regular text part
-            })}
-          </p>
-        );
-      })}
-    </div>
-  );
-};
-
 
 const Generator: React.FC<GeneratorProps> = ({
   videoTopic,
@@ -114,8 +50,7 @@ const Generator: React.FC<GeneratorProps> = ({
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
   const [thumbnailImage, setThumbnailImage] = useState<string | null>(null);
   const [thumbnailError, setThumbnailError] = useState<string | null>(null);
-  const [thumbnailStyle, setThumbnailStyle] = useState('viral');
-  const [thumbnailAspectRatio, setThumbnailAspectRatio] = useState<'16:9' | '9:16'>('16:9');
+  const [thumbnailStyle, setThumbnailStyle] = useState('cinematic');
   const [thumbnailGenerationMode, setThumbnailGenerationMode] = useState<'topic' | 'prompt'>('topic');
   const [customThumbnailPrompt, setCustomThumbnailPrompt] = useState('');
 
@@ -202,7 +137,6 @@ const Generator: React.FC<GeneratorProps> = ({
       const imageBytes = await generateYouTubeThumbnail({
         videoTopic,
         style: thumbnailStyle,
-        aspectRatio: thumbnailAspectRatio,
         textOverlay: thumbnailGenerationMode === 'topic' && addTextToThumbnail ? thumbnailText : undefined,
         customPrompt: thumbnailGenerationMode === 'prompt' ? customThumbnailPrompt : undefined,
       });
@@ -234,8 +168,7 @@ const Generator: React.FC<GeneratorProps> = ({
     setIsGeneratingThumbnail(false);
     setThumbnailImage(null);
     setThumbnailError(null);
-    setThumbnailStyle('viral');
-    setThumbnailAspectRatio('16:9');
+    setThumbnailStyle('cinematic');
     setThumbnailGenerationMode('topic');
     setCustomThumbnailPrompt('');
     setCustomSeoPrompt('');
@@ -256,7 +189,6 @@ const Generator: React.FC<GeneratorProps> = ({
   const handleGenerateAlternativesClick = (e: React.MouseEvent<HTMLButtonElement>) => { createRipple(e); handleGenerateAlternatives(); };
   const handleGenerateThumbnailClick = (e: React.MouseEvent<HTMLButtonElement>) => { createRipple(e); handleGenerateThumbnail(); };
   const handleStyleClick = (e: React.MouseEvent<HTMLButtonElement>, styleId: string) => { createRipple(e); setThumbnailStyle(styleId); };
-  const handleAspectRatioClick = (e: React.MouseEvent<HTMLButtonElement>, ratio: '16:9' | '9:16') => { createRipple(e); setThumbnailAspectRatio(ratio); };
   const handleDownloadClick = (e: React.MouseEvent<HTMLAnchorElement>) => { createRipple(e); };
 
   return (
@@ -343,7 +275,7 @@ const Generator: React.FC<GeneratorProps> = ({
           </div>
         )}
 
-        <ErrorDisplay error={error} />
+        {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
         {isLoading && (
             <div className="mt-8 space-y-4 animate-pulse">
@@ -359,7 +291,7 @@ const Generator: React.FC<GeneratorProps> = ({
         )}
 
         {generatedContent && (
-          <div className="mt-8 divide-y divide-white/10 animate-fade-in">
+          <div className="mt-8 divide-y divide-white/10">
             <div className="space-y-6 pb-8">
               {/* Title */}
               <div>
@@ -402,7 +334,7 @@ const Generator: React.FC<GeneratorProps> = ({
                     </button>
                 </div>
 
-                <ErrorDisplay error={alternativesError} />
+                {alternativesError && <p className="mt-2 text-sm text-red-400">{alternativesError}</p>}
 
                 {isGeneratingAlternatives ? (
                   <div className="mt-4 space-y-3">
@@ -414,7 +346,7 @@ const Generator: React.FC<GeneratorProps> = ({
                     ))}
                   </div>
                 ) : alternativeTitles.length > 0 && (
-                  <div className="mt-4 space-y-3 animate-fade-in">
+                  <div className="mt-4 space-y-3">
                     {alternativeTitles.map((altTitle, index) => (
                       <div key={index} className="flex items-center gap-4 rounded-md bg-white/5 p-3">
                         <div className="w-16 flex-shrink-0 text-center">
@@ -456,7 +388,7 @@ const Generator: React.FC<GeneratorProps> = ({
               <div>
                 <h3 className="text-lg font-semibold text-white">Descripción</h3>
                 <div className="mt-2 flex items-start gap-4 rounded-md bg-white/5 p-4">
-                  <FormattedDescription text={generatedContent.description} />
+                  <p className="flex-grow whitespace-pre-wrap text-gray-300">{generatedContent.description}</p>
                    <button 
                     onClick={(e) => handleCopyClick(e, generatedContent.description, 'description')}
                     className="relative overflow-hidden flex-shrink-0 rounded-full p-2 text-gray-400 transition-all hover:scale-110 hover:bg-white/10 hover:text-white"
@@ -503,14 +435,14 @@ const Generator: React.FC<GeneratorProps> = ({
             <div className="pt-8">
               <h3 className="text-xl font-bold text-white">Generar Miniatura</h3>
               <p className="mt-1 text-sm text-gray-400">
-                Crea una miniatura atractiva para tu video en 4 simples pasos.
+                Crea una miniatura atractiva para tu video en 3 simples pasos.
               </p>
 
               <div className="mt-6">
                 <label className="block text-sm font-medium leading-6 text-gray-300">
                   1. Elige un Estilo Visual
                 </label>
-                <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {thumbnailStyles.map((style) => (
                     <button
                       key={style.id}
@@ -533,50 +465,6 @@ const Generator: React.FC<GeneratorProps> = ({
                   ))}
                 </div>
               </div>
-              
-              <div className="mt-6">
-                <label className="block text-sm font-medium leading-6 text-gray-300">
-                  2. Elige el Formato (Aspect Ratio)
-                </label>
-                <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <button
-                    key="16:9"
-                    type="button"
-                    onClick={(e) => handleAspectRatioClick(e, '16:9')}
-                    className={`relative overflow-hidden flex items-start space-x-4 rounded-lg border bg-white/5 p-4 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-white/20 ${
-                      thumbnailAspectRatio === '16:9' ? 'border-indigo-500 ring-2 ring-indigo-500 shadow-inner shadow-indigo-500/30' : 'border-white/10'
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500">
-                        <HorizontalIcon className="h-6 w-6 text-white" aria-hidden="true" />
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white">Horizontal (16:9)</p>
-                      <p className="mt-1 text-sm text-gray-400">Para videos estándar de YouTube.</p>
-                    </div>
-                  </button>
-                  <button
-                    key="9:16"
-                    type="button"
-                    onClick={(e) => handleAspectRatioClick(e, '9:16')}
-                    className={`relative overflow-hidden flex items-start space-x-4 rounded-lg border bg-white/5 p-4 text-left transition-all duration-200 hover:scale-[1.02] hover:bg-white/20 ${
-                      thumbnailAspectRatio === '9:16' ? 'border-indigo-500 ring-2 ring-indigo-500 shadow-inner shadow-indigo-500/30' : 'border-white/10'
-                    }`}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500">
-                        <VerticalIcon className="h-6 w-6 text-white" aria-hidden="true" />
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-white">Vertical (9:16)</p>
-                      <p className="mt-1 text-sm text-gray-400">Ideal para YouTube Shorts.</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
 
               <div className="mt-6 space-y-4">
                 <div className={`transition-opacity ${thumbnailGenerationMode === 'prompt' ? 'opacity-50' : ''}`}>
@@ -595,7 +483,7 @@ const Generator: React.FC<GeneratorProps> = ({
                     </div>
                     <div className="ml-3 text-sm leading-6">
                       <label htmlFor="add-text" className="font-medium text-gray-300">
-                        3. Añadir texto a la miniatura (Opcional)
+                        2. Añadir texto a la miniatura (Opcional)
                       </label>
                     </div>
                   </div>
@@ -617,7 +505,7 @@ const Generator: React.FC<GeneratorProps> = ({
                 </div>
 
                 <div className="pt-2">
-                  <p className="mb-2 text-sm font-medium text-gray-300">4. Genera tu imagen</p>
+                  <p className="mb-2 text-sm font-medium text-gray-300">3. Genera tu imagen</p>
                   <fieldset className="mb-4">
                     <legend className="sr-only">Método de generación de miniatura</legend>
                     <div className="flex items-center gap-x-6">
@@ -686,17 +574,17 @@ const Generator: React.FC<GeneratorProps> = ({
                   </button>
                 </div>
 
-                <ErrorDisplay error={thumbnailError} />
+                {thumbnailError && <p className="mt-2 text-sm text-red-400">{thumbnailError}</p>}
                 
                 {isGeneratingThumbnail ? (
                   <div className="mt-6">
                     <h4 className="font-semibold text-white">Creando tu miniatura...</h4>
-                    <div className={`w-full max-w-lg animate-pulse rounded-lg bg-white/5 ${thumbnailAspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'}`} />
+                    <div className="mt-2 aspect-video w-full max-w-lg animate-pulse rounded-lg bg-white/5" />
                   </div>
                 ) : thumbnailImage && (
                   <div className="mt-6">
                     <h4 className="font-semibold text-white">Miniatura Generada:</h4>
-                    <div className={`mt-2 w-full max-w-lg overflow-hidden rounded-lg border border-white/10 ${thumbnailAspectRatio === '16:9' ? 'aspect-video' : 'aspect-[9/16]'}`}>
+                    <div className="mt-2 aspect-video w-full max-w-lg overflow-hidden rounded-lg border border-white/10">
                       <img src={thumbnailImage} alt="Miniatura de YouTube generada" className="h-full w-full object-cover" />
                     </div>
                     <a

@@ -1,14 +1,13 @@
-
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Type, Modality, GenerateContentResponse, FinishReason } from "@google/genai";
 import { GeneratedContent, AlternativeTitle } from "../types";
 
-// FIX: Initialize GoogleGenAI with API key from environment variables as per guidelines.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+// Fix: Corrected API key initialization to use `process.env.API_KEY` as per the coding guidelines. This resolves the TypeScript error on `import.meta.env` and aligns with the required API key handling method.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
 
 const textModel = 'gemini-2.5-flash';
-const imagenModel = 'imagen-4.0-generate-001';
+const imageModel = 'gemini-2.5-flash-image';
 
-// FIX: Define a response schema to get structured JSON output from the model.
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -32,7 +31,7 @@ const responseSchema = {
       items: {
         type: Type.STRING,
       },
-      description: "Una lista de 30 palabras clave SEO importantes para el video, extraídas principalmente del título y la descripción.",
+      description: "Una lista de 40 palabras clave SEO importantes para el video.",
     },
     pinnedComment: {
         type: Type.STRING,
@@ -57,7 +56,7 @@ export const generateSeoContent = async (videoTopic: string, customPrompt?: stri
 
     - **Hashtags**: Genera entre 10 y 15 hashtags relevantes. Mezcla hashtags amplios con otros más específicos (de nicho).
 
-    - **Palabras clave**: Proporciona 30 palabras clave de alto valor para SEO. La mayoría de estas palabras clave deben ser extraídas directamente del título y la descripción que has generado, combinando términos de cola larga y corta para maximizar la relevancia.
+    - **Palabras clave**: Proporciona 40 palabras clave de alto valor para SEO que el creador debe incluir en las etiquetas del video.
 
     - **Comentario Fijado Viral**: Crea un comentario corto y potente para fijar en la sección de comentarios. Debe:
       1. Empezar con un gancho que genere curiosidad o una afirmación audaz relacionada con el video.
@@ -74,7 +73,6 @@ export const generateSeoContent = async (videoTopic: string, customPrompt?: stri
   const prompt = `${basePrompt}${customInstruction}\nGenera el contenido estrictamente en el formato JSON solicitado.`;
 
   try {
-    // FIX: Call the generateContent API with the model, prompt, and JSON configuration.
     const response = await ai.models.generateContent({
       model: textModel,
       contents: prompt,
@@ -84,7 +82,6 @@ export const generateSeoContent = async (videoTopic: string, customPrompt?: stri
       },
     });
 
-    // FIX: Extract text from response and parse it as JSON, cleaning up potential markdown fences.
     const jsonString = response.text.trim();
     const cleanedJsonString = jsonString.replace(/^```json\s*|```\s*$/g, '');
     const generatedContent: GeneratedContent = JSON.parse(cleanedJsonString);
@@ -93,10 +90,6 @@ export const generateSeoContent = async (videoTopic: string, customPrompt?: stri
 
   } catch (error) {
     console.error("Error generating content:", error);
-    const errorMessage = (error instanceof Error) ? error.message : String(error);
-    if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('Quota exceeded')) {
-      throw new Error("QUOTA_EXCEEDED");
-    }
     throw new Error("No se pudo generar el contenido. Inténtalo de nuevo.");
   }
 };
@@ -169,10 +162,6 @@ export const generateAlternativeTitles = async (videoTopic: string, originalTitl
 
   } catch (error) {
     console.error("Error generating alternative titles:", error);
-    const errorMessage = (error instanceof Error) ? error.message : String(error);
-    if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('Quota exceeded')) {
-        throw new Error("QUOTA_EXCEEDED");
-    }
     throw new Error("No se pudo generar títulos alternativos. Inténtalo de nuevo.");
   }
 };
@@ -181,11 +170,10 @@ export const generateAlternativeTitles = async (videoTopic: string, originalTitl
 export const generateYouTubeThumbnail = async (options: {
   videoTopic: string;
   style: string;
-  aspectRatio: '16:9' | '9:16';
   textOverlay?: string;
   customPrompt?: string;
 }): Promise<string> => {
-  const { videoTopic, style, aspectRatio, textOverlay, customPrompt } = options;
+  const { videoTopic, style, textOverlay, customPrompt } = options;
 
   let finalPrompt: string;
 
@@ -194,24 +182,6 @@ export const generateYouTubeThumbnail = async (options: {
   } else {
     let styleDescription = '';
     switch (style) {
-      case 'viral': {
-        const textForThumbnail = textOverlay || videoTopic;
-        if (aspectRatio === '16:9') {
-          styleDescription = `Fotomontaje para miniatura de YouTube, estilo viral, colores vibrantes y alto contraste. Composición dividida: a la izquierda, una persona con cara de sorpresa extrema (ojos y boca muy abiertos) señalando a la derecha. La persona tiene un borde de luz que la separa del fondo. A la derecha, el texto gigante "${textForThumbnail}" en fuente gruesa tipo Impact, con degradado amarillo-naranja, borde blanco y sombra roja. El fondo es oscuro y abstracto con neones morados y azules. Una flecha amarilla grande apunta hacia arriba. Fotorrealista y muy llamativo.`;
-        } else { // aspectRatio === '9:16'
-          styleDescription = `Fotomontaje para miniatura de YouTube Short (formato 9:16), estilo viral, colores vibrantes, alto contraste. Composición vertical: arriba, el texto gigante "${textForThumbnail}" en fuente gruesa tipo Impact, con degradado amarillo-naranja, borde blanco y sombra roja. Abajo, una persona con cara de sorpresa extrema mirando hacia el texto, con un borde de luz que la separa del fondo. El fondo es oscuro y abstracto con neones morados y azules. Fotorrealista y muy llamativo.`;
-        }
-        break;
-      }
-      case 'watercolor':
-        styleDescription = "artistic watercolor painting style, soft blended colors, visible brush strokes, on a textured paper background, elegant and beautiful";
-        break;
-      case 'retro':
-        styleDescription = "retro 80s synthwave style, neon pink and blue glowing lines, vintage computer graphics aesthetic, with film grain and a dark background";
-        break;
-      case 'pixel-art':
-        styleDescription = "8-bit pixel art style, vibrant limited color palette, clear blocky pixels, nostalgic classic video game look, no anti-aliasing";
-        break;
       case 'vibrant':
         styleDescription = "vibrant, saturated colors, high contrast";
         break;
@@ -228,15 +198,15 @@ export const generateYouTubeThumbnail = async (options: {
     }
 
     const promptParts: string[] = [
-      styleDescription, // Use the detailed description from the switch case
-      `High resolution, professional quality.`
+      `YouTube thumbnail for a video titled "${videoTopic}".`,
+      `Visual style: ${styleDescription}.`,
+      `Aspect ratio: 16:9.`
     ];
 
-    if (style !== 'viral' && textOverlay) {
-        promptParts.unshift(`YouTube thumbnail for a video titled "${videoTopic}".`)
-        promptParts.push(`CRITICAL INSTRUCTION: The image must prominently feature the text "${textOverlay}". The text must be perfectly centered, highly legible with strong contrast against the background, and rendered in a professional, appealing font. The entire text must be fully visible and MUST NOT be cropped or cut off by the image edges.`);
-    } else if (style !== 'viral') {
-      promptParts.unshift(`YouTube thumbnail for a video titled "${videoTopic}".`)
+    if (textOverlay) {
+      promptParts.push(`The image must feature the text "${textOverlay}".`);
+      promptParts.push(`The text must be highly legible, professional, have a subtle shadow for contrast, and be fully visible without being cut off.`);
+    } else {
       promptParts.push(`The image should not contain any text.`);
     }
 
@@ -244,31 +214,39 @@ export const generateYouTubeThumbnail = async (options: {
   }
 
   try {
-    const response = await ai.models.generateImages({
-      model: imagenModel,
-      prompt: finalPrompt,
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: imageModel,
+      contents: {
+        parts: [{ text: finalPrompt }],
+      },
       config: {
-        numberOfImages: 1,
-        outputMimeType: 'image/jpeg',
-        aspectRatio: aspectRatio,
+        responseModalities: [Modality.IMAGE],
       },
     });
-    
-    if (response.generatedImages && response.generatedImages.length > 0) {
-      const image = response.generatedImages[0];
-      if (image.image?.imageBytes) {
-        return image.image.imageBytes;
+
+    const candidate = response.candidates?.[0];
+
+    if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+      let reason: string = candidate.finishReason;
+      if (response.promptFeedback?.blockReason) {
+        reason = `${reason} (Motivo de bloqueo: ${response.promptFeedback.blockReason})`;
+      }
+      throw new Error(`La IA rechazó la solicitud de imagen (Razón: ${reason}). Por favor, intenta con un prompt diferente o más simple, especialmente si usas un prompt personalizado.`);
+    }
+
+    const parts = candidate?.content?.parts;
+    if (parts) {
+      for (const part of parts) {
+        if (part.inlineData?.data) {
+          return part.inlineData.data;
+        }
       }
     }
 
-    throw new Error("La respuesta de la IA no contenía una imagen. Esto puede deberse a filtros de seguridad o a un prompt demasiado complejo. Intenta simplificar la idea.");
+    throw new Error("La respuesta de la IA no contenía una imagen. Esto puede deberse a filtros de seguridad o a un prompt demasiado complejo.");
 
   } catch (error) {
     console.error("Error generating thumbnail:", error);
-    const errorMessage = (error instanceof Error) ? error.message : String(error);
-    if (errorMessage.includes('RESOURCE_EXHAUSTED') || errorMessage.includes('Quota exceeded')) {
-      throw new Error("QUOTA_EXCEEDED");
-    }
     if (error instanceof Error) {
       throw error;
     }
